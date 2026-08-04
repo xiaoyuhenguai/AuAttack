@@ -97,6 +97,59 @@ bun run packages/pentest-skill/dist/cli.js report ./workspace/target.example
 
 > 本地开发时 `.mcp.json` 可配绝对路径（供任意工作目录启动），仓库内示例统一用相对路径。
 
+## AI Agent 接入（让 Agent 自动干活，而非手动敲 CLI）
+
+AuAttack 的核心使用方式是**让 AI Agent（Claude Code 等）通过 MCP 直接驱动**，整条渗透流程由 Agent 自动编排，不需要你逐条敲 CLI。
+
+### 1. Claude Code（推荐）
+
+把项目目录作为 Claude Code 的工作目录打开，**配好 `.mcp.json` 后 Agent 即可自动调用**：
+
+```bash
+# 一键接入（等价于手写 .mcp.json）
+claude mcp add auattack-pentest --type stdio -- \
+  bun run /path/to/AuAttack/packages/pentest-mcp/src/server.ts \
+  --env PENTEST_BURP_PROXY_URL=http://127.0.0.1:8080
+```
+
+接入后，Agent 会自动按流程工作：调用 `pentest_workflow` 建工作区 → 导入流量 → 浏览器发现 → 知识路由 → 域测试 → 证据链 → 覆盖闭合 → 补天报告。你只需要告诉它目标 URL 和授权说明。
+
+项目还内置 **`auattack-pentest` skill**（`.claude/skills/auattack-pentest/`），Claude 输入 `/auattack-pentest` 即可加载完整工作流约束（AGENTS.md 的操作纪律、证据要求、报告模板），确保 Agent 按规范执行。
+
+### 2. MCP 工具清单（Agent 可调用的 20 个工具）
+
+| 工具 | 作用 |
+|---|---|
+| `pentest_workflow` | 入口：建工作区/续跑，返回当前阶段与可执行任务 |
+| `pentest_state` / `pentest_scope` / `pentest_traffic` | 状态、范围、流量导入 |
+| `pentest_surface` / `pentest_task` / `pentest_finding` | 攻击面图、任务认领、发现提交 |
+| `pentest_http` / `pentest_replay` / `pentest_mutate` / `pentest_compare` | 证据驱动的请求/变异/对比 |
+| `pentest_auto` / `pentest_report` | 确定性分析 / 报告（Markdown/JSON/HTML） |
+| `pentest_knowledge` / `pentest_cve` / `pentest_burp_crawl` / `pentest_browser` | 知识路由 / CVE / Burp 爬虫 / 浏览器验证 |
+| `pentest_command` | 透传其余 CLI（browser、nuclei、oast、coverage、correlation 等） |
+
+### 3. Claude Desktop / 其他 MCP 客户端
+
+Claude Desktop（仅支持 stdio）直接在 `claude_desktop_config.json` 添加：
+
+```json
+{
+  "mcpServers": {
+    "auattack-pentest": {
+      "command": "bun",
+      "args": ["run", "/绝对路径/AuAttack/packages/pentest-mcp/src/server.ts"],
+      "env": { "PENTEST_BURP_PROXY_URL": "http://127.0.0.1:8080" }
+    }
+  }
+}
+```
+
+Coder / Cursor 等支持 MCP 的客户端同理，指向同一个 stdio server 即可。启动 MCP server 的命令始终是：
+
+```bash
+bun run packages/pentest-mcp/src/server.ts
+```
+
 ## Burp Suite 集成（可选）
 
 AuAttack 的浏览器发现、Burp 历史导入、主动爬虫依赖 Burp MCP 扩展（**BurpMCP-Ultra**）。
