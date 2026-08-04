@@ -1,0 +1,140 @@
+/* AuAttack 控制台 —— 设计 token 与基础样式 */
+
+:root {
+  --bg: #0f1117;
+  --bg-elev: #171a22;
+  --bg-elev-2: #1e222d;
+  --border: #2a2f3d;
+  --text: #e6e8ee;
+  --text-dim: #9aa3b2;
+  --accent: #4f8cff;
+  --accent-soft: rgba(79, 140, 255, 0.14);
+  --ok: #3ecf8e;
+  --ok-soft: rgba(62, 207, 142, 0.14);
+  --warn: #f2b54a;
+  --warn-soft: rgba(242, 181, 74, 0.14);
+  --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.14);
+  --blocked: #f0925a;
+  --blocked-soft: rgba(240, 146, 90, 0.14);
+  --muted: #6b7280;
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* ---------- layout ---------- */
+.console { display: flex; height: 100vh; overflow: hidden; }
+.sidebar {
+  width: 300px; min-width: 300px; border-right: 1px solid var(--border);
+  background: var(--bg-elev); display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar h1 { font-size: 15px; margin: 14px 16px 6px; letter-spacing: 0.02em; }
+.sidebar .sub { color: var(--text-dim); font-size: 11px; margin: 0 16px 12px; }
+.ws-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+.ws-item {
+  display: block; width: 100%; text-align: left; padding: 9px 10px; margin: 2px 0;
+  border: 1px solid transparent; border-radius: 8px; background: transparent;
+  color: var(--text); cursor: pointer;
+}
+.ws-item:hover { background: var(--bg-elev-2); }
+.ws-item.active { background: var(--accent-soft); border-color: var(--accent); }
+.ws-item .ws-target { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-item .ws-meta { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.tabbar { display: flex; gap: 2px; padding: 8px 12px 0; border-bottom: 1px solid var(--border); background: var(--bg-elev); flex-wrap: wrap; }
+.tab {
+  padding: 7px 13px; border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0;
+  background: transparent; color: var(--text-dim); cursor: pointer; font-size: 12.5px;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); background: var(--bg); border-color: var(--border); }
+.tab .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.content { flex: 1; overflow-y: auto; padding: 16px 20px 32px; }
+
+/* ---------- panels / tiles ---------- */
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.tile {
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px;
+}
+.tile .t-label { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.tile .t-value { font-size: 22px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tile .t-note { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+
+.panel { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
+.panel > h3 { margin: 0; padding: 10px 14px; font-size: 12.5px; border-bottom: 1px solid var(--border); color: var(--text); }
+.panel .panel-body { padding: 12px 14px; overflow-x: auto; }
+.panel .panel-body.markdown-body { max-width: 100%; }
+
+/* ---------- tables ---------- */
+table.data { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.data th, table.data td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.data th { color: var(--text-dim); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; position: sticky; top: 0; background: var(--bg-elev); }
+table.data tr:hover td { background: var(--bg-elev-2); }
+table.data td.mono, .mono { font-family: var(--mono); font-size: 12px; }
+
+/* ---------- badges ---------- */
+.badge { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 11px; border: 1px solid var(--border); }
+.badge.tested, .badge.confirmed, .badge.reproduced { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+.badge.waived { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.badge.blocked, .badge.superseded { background: var(--blocked-soft); color: var(--blocked); border-color: var(--blocked); }
+.badge.untested, .badge.rejected, .badge.failed { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+.badge.running, .badge.in_progress, .badge.pending { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.badge.info, .badge.low, .badge.completed, .badge.skipped { background: rgba(120,130,150,0.14); color: var(--text-dim); border-color: var(--muted); }
+.badge.medium { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.badge.high { background: var(--blocked-soft); color: var(--blocked); border-color: var(--blocked); }
+.badge.critical { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+
+/* ---------- coverage bar ---------- */
+.cov-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--bg-elev-2); margin: 6px 0; }
+.cov-bar > div { height: 100%; }
+.cov-bar .seg-tested { background: var(--ok); }
+.cov-bar .seg-waived { background: var(--warn); }
+.cov-bar .seg-blocked { background: var(--blocked); }
+.cov-bar .seg-untested { background: var(--danger); }
+
+/* ---------- markdown ---------- */
+.markdown-body h1, .markdown-body h2, .markdown-body h3 { color: var(--text); margin: 16px 0 8px; }
+.markdown-body h1 { font-size: 18px; } .markdown-body h2 { font-size: 15px; } .markdown-body h3 { font-size: 13.5px; }
+.markdown-body table { border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+.markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 5px 8px; }
+.markdown-body th { background: var(--bg-elev-2); }
+.markdown-body code { background: var(--bg-elev-2); border-radius: 4px; padding: 1px 5px; font-family: var(--mono); font-size: 12px; }
+.markdown-body pre { background: var(--bg-elev-2); border-radius: 8px; padding: 10px; overflow-x: auto; }
+.markdown-body pre code { background: none; padding: 0; }
+.markdown-body a { color: var(--accent); }
+.markdown-body blockquote { border-left: 3px solid var(--accent); margin: 8px 0; padding: 2px 12px; color: var(--text-dim); }
+
+/* ---------- graph / misc ---------- */
+.graph { width: 100%; height: 520px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-elev); }
+.graph-small { width: 100%; height: 420px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-elev); }
+.flex-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.flex-col { display: flex; flex-direction: column; gap: 10px; }
+.grow { flex: 1; min-width: 0; }
+.empty { color: var(--text-dim); font-style: italic; padding: 14px; }
+.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+input[type='text'], select, .input {
+  background: var(--bg-elev-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 5px 9px; font-size: 12.5px;
+}
+button.btn {
+  background: var(--bg-elev-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 5px 11px; font-size: 12.5px; cursor: pointer;
+}
+button.btn:hover { border-color: var(--accent); color: var(--accent); }
+.detail-rows { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; font-size: 12.5px; }
+.detail-rows dt { color: var(--text-dim); }
+.detail-rows dd { margin: 0; word-break: break-all; }
+.refresh-note { color: var(--text-dim); font-size: 11px; margin-left: auto; }
+
+/* pre-formatted text (audit / raw) */
+pre.dump { background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow: auto; font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-all; }

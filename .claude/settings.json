@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__auattack-pentest__pentest_workflow",
+      "mcp__auattack-pentest__pentest_state",
+      "mcp__auattack-pentest__pentest_knowledge",
+      "mcp__auattack-pentest__pentest_scope",
+      "mcp__auattack-pentest__pentest_traffic",
+      "mcp__auattack-pentest__pentest_surface",
+      "mcp__auattack-pentest__pentest_task",
+      "mcp__auattack-pentest__pentest_finding",
+      "mcp__auattack-pentest__pentest_auto",
+      "mcp__auattack-pentest__pentest_browser",
+      "mcp__auattack-pentest__pentest_javascript",
+      "mcp__auattack-pentest__pentest_cve",
+      "mcp__auattack-pentest__pentest_report",
+      "mcp__auattack-pentest__pentest_command",
+      "mcp__auattack-pentest__pentest_http",
+      "mcp__auattack-pentest__pentest_replay",
+      "mcp__auattack-pentest__pentest_mutate",
+      "mcp__auattack-pentest__pentest_compare"
+    ]
+  }
+}

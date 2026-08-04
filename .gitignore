@@ -1,0 +1,34 @@
+# 依赖与构建产物
+node_modules/
+packages/*/dist/
+web/node_modules/
+web/dist/
+
+# 敏感数据：测试工作区、报告、状态数据库（含会话/凭据/证据）
+workspace/
+reports/
+*.sqlite
+*.db
+*.sqlite-wal
+*.sqlite-shm
+
+# 漏洞数据库（巨大，不随仓库分发，见 README「漏洞数据库」节）
+data/
+packages/pentest-skill/references/vulnify/
+
+# 无关/临时/演示
+XuanMu-RedTeam-Agent-main/
+XuanMu-RedTeam-Agent-main.zip
+--help/
+demo/
+generate/
+mark-blocked/
+
+# 本地环境配置（含绝对路径，按需自行配置）
+.mcp.json
+.claude/settings.local.json
+
+# 系统
+.DS_Store
+Thumbs.db
+*.log

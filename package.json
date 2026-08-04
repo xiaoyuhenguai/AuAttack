@@ -1,0 +1,27 @@
+{
+  "name": "auattack-pentest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "web"],
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "test": "bun test packages/pentest-core/src/__tests__",
+    "typecheck": "bun x tsc --noEmit",
+    "mcp": "bun run packages/pentest-mcp/src/server.ts",
+    "console": "bun run web/server.ts",
+    "web:dev": "bun run --cwd web dev",
+    "web:build": "bun run --cwd web build",
+    "web:typecheck": "bun run --cwd web typecheck"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@types/bun": "^1.3.12",
+    "@types/ws": "^8.18.1",
+    "fflate": "^0.8.2",
+    "typescript": "^6.0.3",
+    "ws": "^8.18.3",
+    "yaml": "^2.8.3",
+    "zod": "^4.3.6"
+  }
+}
