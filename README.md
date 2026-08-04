@@ -1,98 +1,145 @@
-# AuAttack — Evidence-Driven Web Pentest Runtime
+# AuAttack — 证据驱动的 AI Web 渗透测试框架
 
-Portable, evidence-driven web penetration-testing runtime with a Bun CLI and a stdio MCP server. The core has no model dependency; `pentest auto` performs deterministic local analysis only, and every active action passes ScopeGuard, approvals, and evidence preservation.
+> **Evidence-Driven AI Web Pentest Framework** · 便携 · 可审计 · 中文补天报告一键生成
 
-## Highlights
+AuAttack 是一套**证据驱动的 Web 渗透测试运行时**：以 Bun/TypeScript 为核心、通过 MCP 与 CLI 双接口暴露，由 AI（Claude Code）编排多个安全 Agent 协同测试。核心引擎**零模型依赖**（`pentest auto` 仅做确定性本地分析），每一次主动操作都经过 ScopeGuard、审批与证据保留，最终报告可直接生成**补天（Butian）提交格式**。
 
-- **Evidence first**: baseline → single-variable mutation → replay → compare → candidate. Reproduced/confirmed findings require independent replay.
-- **Coverage closure**: a coverage ledger tracks every route/parameter as tested/waived/untested; `pentest_report` is blocked while untested > 0, and the HTML site map is colored (green tested / yellow waived / red untested).
-- **Deterministic correlation**: `pentest correlation` scans confirmed findings against chain rules and emits chain hypotheses for the correlation-agent.
-- **Browser-first discovery**: a real browser (via the configured Burp proxy when reachable) crawls the target and its CDP-captured traffic is replayable even without Burp; Burp MCP crawl is an optional augmentation.
-- **Active recon escalation**: vendored **dirsearch** (content discovery) and **nmap** (port scan) — hits are re-imported as evidence + surface nodes; open ports become `port` nodes feeding port knowledge records and the CVE pipeline.
-- **Client-side verification**: `pentest browser-verify` navigates a headless browser to a marker payload and confirms the marker global was set (reflection ≠ execution).
-- **Domain-grouped workspaces**: `workspace/<registrable-domain>/<subdomain>` (e.g. `workspace/navimow.com/account-test`, apex targets land in `workspace/<domain>/root`); re-running `init`/`pentest_workflow` on the same target resumes the existing workspace (`--new` forces a fresh one).
+---
 
-## Quick Start
+## 为什么叫"证据驱动"
 
-```powershell
+传统扫描器输出"可能漏洞"，AuAttack 输出**可复现的证据链**：
+
+```
+基线请求 → 单变量变异 → 重放 → 对比 → 候选发现 → 独立重放 → reproduced/confirmed
+```
+
+- 每条 finding 必须有 **baseline / variant / comparison** 三份证据工件
+- `reproduced/confirmed` 必须由独立重放确认，杜绝"看着像就算"
+- 覆盖账本（coverage ledger）逐参数记录"测过什么、怎么测的"，**报告在 untested > 0 时被阻塞**
+
+## 核心特性
+
+- 🧠 **AI Agent 编排**：surface / cve / recon / injection / auth / file / business / poc / verification / correlation 多角色协同，黑板协调（先读黑板、rejected 假设跳过），每一环都有证伪纪律
+- 🛡️ **三重防线**：ScopeGuard（越权拦截）+ 审批（P2/P3/P4 分权）+ 证据保留，危险操作不可绕过
+- 🔍 **浏览器优先发现**：真实浏览器（走 Burp 代理）抓取 CDP 流量，**Burp 掉线也能重放**；Burp MCP 爬虫为可选增强
+- 🧬 **知识层**：POC 目录 + 方法论（含 WAF 绕过/证伪）+ 结构化规则 + **Vulnify CVE 快照**（精确版本匹配，单独下载）
+- 🧰 **开箱工具**：vendored dirsearch（内容发现）、nmap（端口扫描）、ddddocr（验证码识别）、Nuclei、OAST、POC
+- 🖥️ **Web 控制台**（React + Vite）：总览 / 攻击面图 / 攻击链 / 任务 / 发现 / 覆盖 / 时间线 / 证据 / 报告 / 黑板
+- 📄 **补天报告一键生成**：`butian-submission.md` 按官方模板输出，真实请求包脱敏、等级映射、厂商字段待确认清单
+- 🔗 **攻击链关联**：`correlation` 确定性扫描 confirmed findings，攻击链落库可画图
+
+## 架构
+
+```
+┌──────────────── Claude Code 会话 ─────────────────┐
+│   auattack-pentest skill → AGENTS.md + MCP(stdio) │
+│   编排器: surface → cve → recon → 5×domain agent  │
+│           → verification → correlation            │
+└───────────────┬──────────────────────────┬────────┘
+                │ MCP 20 工具                │ CLI
+┌───────────────▼──────────────────────────▼────────┐
+│        packages/pentest-core (~16.6k 行, 40 模块)   │
+│   状态: SQLite(WAL) · 攻击面图 · 覆盖账本 · 黑板    │
+│   domain: scope/approvals/http/browser/nuclei/oast │
+│           poc/knowledge/cve/coverage/correlation   │
+└───────────────┬──────────────────────────┬────────┘
+                │ Bun.serve :8787           │
+┌───────────────▼──────────┐   ┌───────────▼─────────┐
+│  Web 控制台 (React+Vite)  │   │ 知识层 (POC/方法论/  │
+│  11 标签页只读可视化        │   │  规则/CVE 快照)     │
+└──────────────────────────┘   └─────────────────────┘
+```
+
+## 快速开始
+
+```bash
 bun install
 bun run --filter @auattack/pentest-skill build
 
-# init (resumes existing <hostname> workspace; use --new for a fresh run)
+# 初始化（同 host 自动续跑，--new 开新 run）
 bun run packages/pentest-skill/dist/cli.js init https://target.example
-# or via MCP: pentest_workflow { "targetUrl": "https://target.example" }
+# 或 MCP: pentest_workflow { "targetUrl": "https://target.example" }
 
-bun run packages/pentest-skill/dist/cli.js traffic import-har .\workspace\target.example .\capture.har
-bun run packages/pentest-skill/dist/cli.js auto .\workspace\target.example
+# 导入授权流量（HAR / Burp JSON / raw）
+bun run packages/pentest-skill/dist/cli.js traffic import-har ./workspace/target.example ./capture.har
+bun run packages/pentest-skill/dist/cli.js auto ./workspace/target.example
 
-# surface discovery (primary crawl) — inside an active surface-001 task
-bun run packages/pentest-skill/dist/cli.js browser discover .\workspace\target.example https://target.example --task surface-001
+# 浏览器主爬虫（primary crawl）
+bun run packages/pentest-skill/dist/cli.js browser discover ./workspace/target.example https://target.example --task surface-001
 
-# knowledge import → match → tasks
-bun run packages/pentest-skill/dist/cli.js knowledge import .\workspace\target.example --file packages/pentest-skill/references/knowledge-records/<record>.json
-bun run packages/pentest-skill/dist/cli.js knowledge match .\workspace\target.example
+# 知识路由 → 匹配 → 生成测试任务
+bun run packages/pentest-skill/dist/cli.js knowledge import ./workspace/target.example --file <record.json>
+bun run packages/pentest-skill/dist/cli.js knowledge match ./workspace/target.example
 
-# active recon escalation (each requires an approval)
-bun run packages/pentest-skill/dist/cli.js approval grant .\workspace\target.example P3 --purpose "content discovery"
-bun run packages/pentest-skill/dist/cli.js discover dirsearch .\workspace\target.example https://target.example --approval <id>
-bun run packages/pentest-skill/dist/cli.js approval grant .\workspace\target.example P4 --purpose "port scan"
-bun run packages/pentest-skill/dist/cli.js nmap .\workspace\target.example target.example --approval <id>
-
-# completion gates
-bun run packages/pentest-skill/dist/cli.js coverage .\workspace\target.example
-bun run packages/pentest-skill/dist/cli.js correlation .\workspace\target.example
-bun run packages/pentest-skill/dist/cli.js browser-verify .\workspace\target.example "<payload-url>" --marker __auv_xss_1
+# 完成门：覆盖闭合 + 关联 + 报告
+bun run packages/pentest-skill/dist/cli.js coverage ./workspace/target.example
+bun run packages/pentest-skill/dist/cli.js correlation ./workspace/target.example
+bun run packages/pentest-skill/dist/cli.js report ./workspace/target.example
 ```
 
-## Knowledge Assets
+### MCP 配置
 
-| Asset | Count | Role |
-|---|---|---|
-| `references/knowledge/` | 13 POC catalogs + `CLASSIFICATION.md` index | "what the vulnerability looks like" — real Nuclei templates from the Vulnify snapshot |
-| `references/methodology/` | 20 manuals | "how to test it" — per-class identify + expert WAF-bypass + verify, loaded by `knowledge prepare` per agent role |
-| `references/knowledge-records/` | 37 structured rules | "when to test it" — signals → `knowledge match` → auto-generated tasks |
-| `references/vulnify/` | v2026.07.25 (441 MB) | precise affected-version CVE matching (`pentest cve`) |
-
-Coverage: injection (SQLi/XSS/SSTI/CMDi/SSRF/XXE/LFI/NoSQL/JNDI/HPP/PP/GraphQL), auth & access control (BOLA/JWT/CORS/401-403/Host-header/cache-deception/type-juggling/CSRF), file & parser (SCM-leak/CSV/dependency-confusion/actuator/debugbar/WebLogic/upload), client-side (open-redirect/WebSocket/email-header/XSS), infra (Redis/Docker/ES/K8s ports), smuggling, business logic (methodology-driven).
-
-## 漏洞数据库（CVE 快照）
-
-本仓库**不随附** Vulnify CVE 快照（`v2026.07.25`，约 421MB 压缩，过大未入库）。
-
-- **数据库来源**：[Vulnify](https://github.com/khulnasoft/vulnify) 开源项目（授权测试的 CVE 知识快照）
-- **建议下载到**：`packages/pentest-skill/references/vulnify/v2026.07.25/`（结构：`vulnify.db.zst`）
-- **初始化**：首次使用前运行 `pentest cve init`（解压到 `%LOCALAPPDATA%\AuAttack\vulnify`，需 `zstd` 在 PATH）
-
-> 未安装时 `pentest cve`（受影响的 CVE 精确匹配）不可用，其余功能不受影响。
-
-## Agent Workflow
-
-The MCP surface starts with `pentest_workflow`, then `pentest_state/scope/traffic/surface/http/replay/mutate/compare/task/finding/auto/report/knowledge`, with `pentest_command` exposing the remaining CLI (browser, discover, nmap, coverage, correlation, probes, nuclei, OAST, sessions, approvals, flows, POCs, CVE). Repository-level agent rules: `AGENTS.md`.
+在 Claude Code 中通过 `.mcp.json`（或项目级 MCP 配置）接入（**相对路径**，clone 后从项目根直接可用）：
 
 ```json
 {
   "mcpServers": {
     "auattack-pentest": {
+      "type": "stdio",
       "command": "bun",
-      "args": ["run", "D:/tools/Packet capture/Burp Suite/ai/AuAttack/packages/pentest-mcp/src/server.ts"],
+      "args": ["run", "packages/pentest-mcp/src/server.ts"],
       "env": { "PENTEST_BURP_PROXY_URL": "http://127.0.0.1:8080" }
     }
   }
 }
 ```
 
-## Vendored Tools
+> 本地开发时 `.mcp.json` 可配绝对路径（供任意工作目录启动），仓库内示例统一用相对路径。
 
-`tools/` ships dirsearch (content discovery) and nmap (port scan) so the whole folder is portable. `PENTEST_DIRSEARCH` / `PENTEST_NMAP` override the paths. Setup on a fresh machine:
+## 知识资产
 
-```bash
-pip install -r tools/dirsearch/requirements.txt
-pip install "setuptools<81"   # Python 3.12+ no longer ships pkg_resources
+| 资产 | 数量 | 作用 |
+|---|---|---|
+| `references/knowledge/` | 14 POC 目录 | "漏洞长什么样" |
+| `references/methodology/` | 24 方法论 | "怎么测"（分类识别 + WAF 绕过 + 验证） |
+| `references/knowledge-records/` | 43 结构化规则 | "什么时候测"（信号匹配 → 自动任务） |
+| `references/vulnify/` | v2026.07.25（单独下载） | 受影响版本 CVE 精确匹配（`pentest cve`） |
+
+覆盖：injection（SQLi/XSS/SSTI/CMDi/SSRF/XXE/LFI/NoSQL/GraphQL 等）、auth & access control（BOLA/JWT/CORS/CSRF/type-juggling 等）、file & parser、client-side、infra、smuggling、business logic。
+
+### 漏洞数据库（CVE 快照）
+
+本仓库**不随附** Vulnify CVE 快照（`v2026.07.25`，约 421MB 压缩，过大未入库）。
+
+- **数据库来源**：[Vulnify](https://github.com/khulnasoft/vulnify) 开源项目
+- **建议下载到**：`packages/pentest-skill/references/vulnify/v2026.07.25/`（结构：`vulnify.db.zst`）
+- **初始化**：首次使用前运行 `pentest cve init`（需 `zstd` 在 PATH）
+
+> 未安装时 `pentest cve`（受影响 CVE 精确匹配）不可用，其余功能不受影响。
+
+## 目录
+
+```
+packages/pentest-core/      核心逻辑（状态/DAG/工具/自动化）
+packages/pentest-mcp/       MCP stdio 服务器（20 工具）
+packages/pentest-skill/     Agent 规则 + 知识层 + 技能
+web/                        只读 Web 控制台（React+Vite）
+tools/                      vendored dirsearch / nmap / 辅助脚本
+workspace/                  域分组工作区（<域名>/<子域>，gitignore 排除）
+data/                       CVE 快照等（gitignore 排除，按需下载）
 ```
 
-## Operational Notes
+## 文档
 
-- **Restart the MCP server after code changes** (it runs from `src`; a restart picks up new ROLE_SOURCES and commands).
-- **Approvals**: active recon (`dirsearch` P3, `nmap` P4) and P3/P4 replays require a pre-granted approval (`pentest approval grant`).
-- **Residual risk**: content discovery is probabilistic — genuinely unlinked endpoints may remain undiscovered; the coverage gate verifies known surface only.
-- **Testing**: `bun test packages/pentest-core/src/__tests__`.
+- `ARCHITECTURE.md` — 架构与启动手册
+- `AGENTS.md` — Agent 操作纪律与工作流
+- `packages/pentest-skill/references/` — 知识层索引
+
+## 技术栈
+
+Bun · TypeScript · SQLite(WAL) · MCP SDK · React/Vite · Playwright/CDP · ddddocr · Vulnify
+
+---
+
+> ⚠️ **合法使用**：仅用于已授权目标的渗透测试。AuAttack 内置 ScopeGuard 与审批，但请遵守当地法律与测试边界。
