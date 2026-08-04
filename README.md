@@ -210,6 +210,14 @@ AuAttack 的浏览器发现、Burp 历史导入、主动爬虫依赖 Burp MCP �
 | SSE（备用） | `http://127.0.0.1:9877/` |
 | Web 仪表盘 | `http://127.0.0.1:9878` |
 
+### 代理与 TLS 证书（要不要用户自己配？）
+
+**自动化浏览器：不需要手动导入证书。** AuAttack 的浏览器发现使用隔离的 Chrome，通过 `--ignore-certificate-errors` 自动接受 Burp 的 MITM 证书（`browser-tls` 命令持久化该策略，`--insecure-tls` 选项即时生效）。抓包流量照常记录，无需你导入 Burp CA。
+
+**Burp 代理：只需 Burp 在默认端口监听。** 项目通过环境变量指向代理（默认 `http://127.0.0.1:8080`），Burp 装好后默认即监听该端口，无需额外配置；换端口改 `PENTEST_BURP_PROXY_URL` 即可。
+
+> 仅当你想**手动用浏览器**（非自动化）或自己抓包时，才需要按 Burp 标准流程导入其 CA 证书 —— 这不是 AuAttack 的必需步骤。
+
 AuAttack 通过环境变量连接（无需手动建 burp MCP client）：
 
 ```json
