@@ -97,6 +97,52 @@ bun run packages/pentest-skill/dist/cli.js report ./workspace/target.example
 
 > 本地开发时 `.mcp.json` 可配绝对路径（供任意工作目录启动），仓库内示例统一用相对路径。
 
+## Burp Suite 集成（可选）
+
+AuAttack 的浏览器发现、Burp 历史导入、主动爬虫依赖 Burp MCP 扩展（**BurpMCP-Ultra**）。
+
+### 安装 BurpMCP-Ultra
+
+1. **获取插件**：[Releases 下载预编译 jar](https://github.com/Cy-S3c/BurpMCP-Ultra/releases)，或自行构建：
+   ```bash
+   git clone https://github.com/Cy-S3c/BurpMCP-Ultra.git
+   cd BurpMCP-Ultra
+   ./gradlew shadowJar        # Windows: gradlew.bat shadowJar（需 JDK 17）
+   ```
+2. **Burp Suite 加载**：`Extensions → Add` → 选择 jar（Burp Suite Professional 2025.x+）
+3. 加载后出现 **BurpMCP-Ultra** 标签页，状态 "Running" 即就绪
+
+### 端点与配置
+
+| 服务 | 地址 |
+|---|---|
+| MCP SSE（主，**根路径 `/` 而非 `/sse`**） | `http://127.0.0.1:9876/` |
+| SSE（备用） | `http://127.0.0.1:9877/` |
+| Web 仪表盘 | `http://127.0.0.1:9878` |
+
+AuAttack 通过环境变量连接（无需手动建 burp MCP client）：
+
+```json
+{
+  "mcpServers": {
+    "auattack-pentest": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["run", "packages/pentest-mcp/src/server.ts"],
+      "env": {
+        "PENTEST_BURP_MCP_URL": "http://127.0.0.1:9876/",
+        "PENTEST_BURP_PROXY_URL": "http://127.0.0.1:8080"
+      }
+    }
+  }
+}
+```
+
+> 若需要 Claude Code 直接驱动 Burp（非 AuAttack 通道），在 `.mcp.json` 单独加 `burp` server（SSE 端点 + Server 标签页的 Bearer Token）：
+> ```json
+> { "mcpServers": { "burp": { "type": "sse", "url": "http://127.0.0.1:9876/", "headers": { "Authorization": "Bearer <TOKEN>" } } } }
+> ```
+
 ## 知识资产
 
 | 资产 | 数量 | 作用 |
