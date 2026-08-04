@@ -51,6 +51,43 @@ AuAttack 是一套**证据驱动的 Web 渗透测试运行时**：以 Bun/TypeSc
 └──────────────────────────┘   └─────────────────────┘
 ```
 
+## 环境要求
+
+### 必需运行时
+
+| 运行时 | 版本 | 用途 | 安装 |
+|---|---|---|---|
+| **Bun** | ≥ 1.3 | 核心运行时（CLI/MCP/Web 控制台） | 官方脚本 `curl -fsSL https://bun.sh/install \| bash`（Windows 用 `powershell -c "irm bun.sh/install.ps1 \| iex"`） |
+| **Python** | ≥ 3.10 | `tools/dirsearch`（内容发现） | [python.org](https://www.python.org/downloads/) |
+
+### 可选
+
+| 依赖 | 用途 | 说明 |
+|---|---|---|
+| **zstd** | 解压 Vulnify CVE 快照（`pentest cve init`） | 未装则 `pentest cve` 不可用；`apt install zstd` / `choco install zstd` |
+| **Burp Suite Professional** | Burp 历史导入 / 主动爬虫（BurpMCP-Ultra） | 详见「Burp Suite 集成」；不装则浏览器发现/CDP 流量仍可用 |
+| **JDK 17** | 构建 BurpMCP-Ultra 插件 | 仅构建插件时需要；直接下载预编译 jar 则无需 |
+
+### 安装步骤
+
+```bash
+# 1. 安装 Bun、Python（见上表）
+
+# 2. 安装项目依赖
+bun install
+bun run --filter @auattack/pentest-skill build
+
+# 3. dirsearch 依赖（内容发现）
+pip install -r tools/dirsearch/requirements.txt
+pip install "setuptools<81"     # Python 3.12+ 不再内置 pkg_resources
+
+# 4.（可选）CVE 快照：解压 Vulnify 到 references/vulnify/v2026.07.25/（见「漏洞数据库」节），确保 zstd 在 PATH
+
+# 5.（可选）Burp MCP 插件：见「Burp Suite 集成」节
+```
+
+> vendored 工具已随仓库携带：`tools/nmap`（Windows 二进制 nmap.exe）、`tools/dirsearch`（Python 源码）、`tools/captcha-ocr`（ddddocr 验证码识别）。`PENTEST_DIRSEARCH` / `PENTEST_NMAP` 可覆盖路径。
+
 ## 快速开始
 
 ```bash
