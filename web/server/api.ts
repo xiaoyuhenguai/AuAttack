@@ -21,6 +21,7 @@ import { readEvidencePaginated } from '../../packages/pentest-core/src/outputRea
 import { listKnowledgeNotes } from '../../packages/pentest-core/src/knowledge.ts'
 import { getAttackPathGraph } from '../../packages/pentest-core/src/attackPath.ts'
 import { getTestLedgerSummary, listTestLedger } from '../../packages/pentest-core/src/testLedger.ts'
+import { getSemanticCoverage } from '../../packages/pentest-core/src/semanticCoverage.ts'
 import { getPentestAutomationStatus } from '../../packages/pentest-core/src/automation.ts'
 import { generateReconSummary } from '../../tools/recon-summary.ts'
 import {
@@ -250,6 +251,41 @@ export async function handleApiRequest(opts: {
 
   if (section === 'test-ledger') {
     return json({ records: listTestLedger(workspace), summary: getTestLedgerSummary(workspace) })
+  }
+
+  if (section === 'semantic-coverage') {
+    return json(getSemanticCoverage(workspace))
+  }
+
+  if (section === 'fingerprints') {
+    const cve = state.integrations.cveAnalysis
+    const affectedNodeIds = new Set(cve?.technologyNodeIds ?? [])
+    const technologies = state.surface.nodes
+      .filter(node => node.kind === 'technology')
+      .map(node => ({
+        id: node.id,
+        value: node.value,
+        source: node.source,
+        product: String(node.attributes?.product ?? ''),
+        version: String(node.attributes?.version ?? ''),
+        evidence: String(node.attributes?.fingerprintEvidence ?? ''),
+        confidence: Number(node.attributes?.confidence ?? 0),
+        categories: String(node.attributes?.categories ?? ''),
+        affected: affectedNodeIds.has(node.id),
+      }))
+      .sort((a, b) => {
+        // fingerprint-derived first, then by confidence desc, then name
+        const aFp = a.source.startsWith('fingerprint:') ? 1 : 0
+        const bFp = b.source.startsWith('fingerprint:') ? 1 : 0
+        if (aFp !== bFp) return bFp - aFp
+        if (b.confidence !== a.confidence) return b.confidence - a.confidence
+        return a.value.localeCompare(b.value)
+      })
+    return json({
+      technologies,
+      affectedCveCount: cve?.affectedCveIds.length ?? 0,
+      analyzedAt: cve?.analyzedAt ?? null,
+    })
   }
 
   if (section === 'audit') {

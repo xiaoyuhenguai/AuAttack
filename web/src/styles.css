@@ -49,6 +49,17 @@ body {
 .ws-item.active { background: var(--accent-soft); border-color: var(--accent); }
 .ws-item .ws-target { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ws-item .ws-meta { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+.ws-group { margin: 2px 0; }
+.ws-group-header {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 8px 10px; margin: 4px 0 2px;
+  border: 1px solid transparent; border-radius: 8px;
+  background: var(--bg-elev-2); color: var(--text); cursor: pointer; text-align: left;
+}
+.ws-group-header:hover { border-color: var(--accent); }
+.ws-group-header.group-active { background: var(--accent-soft); border-color: var(--accent); }
+.ws-caret { font-size: 10px; color: var(--text-dim); width: 12px; }
+.ws-item.ws-child { margin-left: 14px; width: calc(100% - 14px); }
 
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .tabbar { display: flex; gap: 2px; padding: 8px 12px 0; border-bottom: 1px solid var(--border); background: var(--bg-elev); flex-wrap: wrap; }

@@ -45,7 +45,7 @@
 
 ### 数据流(一次评估)
 
-1. 导入流量(HAR/raw/Burp/browser)→ surface 建图(route/parameter/technology/port 节点)
+1. 导入流量(HAR/raw/Burp/browser)→ surface 建图(route/parameter/technology/port 节点)→ **fingerprint analyze**(Wappalyzer+FingerprintHub 双源指纹,补技术节点)
 2. `cve-001` 分析技术节点 → Vulnify 命中受影响的 CVE
 3. `recon-002` 闭合信息收集:生成 `reports/recon-summary.md`(目录/API/敏感/指纹/测试方向),**domain 测试被 gate 住,recon 不闭合不能测**
 4. 5 个 domain agent 并行测(injection/auth/file/business/poc,上限 `--max-agents`,默认 3,受 scope.maxAgentConcurrency 约束):黑板记假设与证伪,coverage 记 tested/blocked,**test-ledger 逐参数记"测了什么类、什么技术、什么结果"**
@@ -116,6 +116,8 @@ bun run run-pentest.ts attack-path sync <workspace># 落攻击链
 | `evidence read <ws> --evidence <id> --file <f>` | 证据输出分页读 |
 | `attack-path <ws> [sync\|list\|graph\|status]` | 攻击路径 |
 | `test-ledger <ws> [list\|summary\|record]` | 逐参数测试账本(哪个 URL+参数 测了什么类、结果如何) |
+| `js analyze <ws>` / `js chase <ws> [--max-files] [--max-depth]` | JS 静态分析;chase=追 JS 引用的其他 JS(域内、去重、有界)并分析 |
+| `fingerprint analyze <ws>` / `update [--source]` / `status` | 双源指纹匹配:Wappalyzer 7551 + FingerprintHub 3149(CN 覆盖);update=从 GitHub API 拉最新规则集 |
 | `cve init / search / analyze` | CVE 分析(vulnify) |
 | `correlation <ws>` | 攻击链扫描 + 落库 |
 | `discover dirsearch` / `nmap` / `subdomains` | 主动侦察(需 approval) |
@@ -136,7 +138,7 @@ bun run web/server.ts --dev      # 终端 1:起 API(仅 /api)
 bun run web:dev                  # 终端 2:Vite dev server http://localhost:5173(代理 /api)
 ```
 
-12 个标签页:总览 / 信息收集(recon-summary+site-brief+知识笔记)/ 攻击面图 / **站点地图**(树形)/ **攻击链** / 任务 / 发现 / 覆盖(含 blocked + **测试范围明细**)/ 时间线 / 证据(分页读)/ 报告 / 黑板。
+14 个标签页:总览 / 信息收集(recon-summary+site-brief+知识笔记)/ **指纹**(技术/版本/类别/置信度/来源/受影响 CVE/命中证据)/ 攻击面图 / **站点地图**(树形)/ **攻击链** / 任务 / 发现 / 覆盖(含 blocked + **测试范围明细**)/ **语义覆盖**(矩阵:每参数 × 12 漏洞类的账本结果,回答"测过什么")/ 时间线 / 证据(分页读)/ 报告 / 黑板。
 
 > 控制台是**只读监控**,不跑渗透;唯一写动作是"重新生成 recon-summary"。实时性靠轮询(5-15s)。
 

@@ -16,6 +16,8 @@ import { coverageGap } from '../../packages/pentest-core/src/coverage.ts'
 export interface WorkspaceListItem {
   id: string
   path: string
+  /** relative path from workspace root, e.g. "yljz.com/account" or "www.yooli.com" */
+  rel: string
   name: string
   targetUrl: string
   profile: string
@@ -85,6 +87,7 @@ export function discoverWorkspaces(workspaceRoot: string): WorkspaceListItem[] {
       items.push({
         id: encodeWorkspaceId(workspaceRoot, path),
         path,
+        rel: relative(workspaceRoot, path).replace(/\\/g, '/'),
         name: state.run.name,
         targetUrl: state.run.targetUrl,
         profile: state.run.profile,

@@ -3,6 +3,7 @@
 export interface WorkspaceListItem {
   id: string
   path: string
+  rel: string
   name: string
   targetUrl: string
   profile: string

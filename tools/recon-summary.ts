@@ -24,6 +24,7 @@ import {
   recordReconSummary,
 } from '../packages/pentest-core/src/state.ts'
 import { inferCoverageRole } from '../packages/pentest-core/src/coverage.ts'
+import { analyzeFingerprints } from '../packages/pentest-core/src/fingerprint.ts'
 import type {
   PentestState,
   PentestAgentRole,
@@ -272,11 +273,15 @@ function fingerprintRows(state: PentestState): {
       typeof node.attributes?.product === 'string' ? node.attributes.product : ''
     const techName = product || node.value
     const matched = affected.length > 0 ? affected.join(', ') : ''
+    const evidence =
+      typeof node.attributes?.fingerprintEvidence === 'string'
+        ? node.attributes.fingerprintEvidence.slice(0, 80)
+        : ''
     rows.push(
-      `| \`${escapeCell(node.value)}\` | ${escapeCell(version)} | ${escapeCell(matched)} |`,
+      `| \`${escapeCell(node.value)}\` | ${escapeCell(version)} | ${escapeCell(evidence)} | ${escapeCell(matched)} |`,
     )
   }
-  if (rows.length === 0) rows.push('| — | — | — |')
+  if (rows.length === 0) rows.push('| — | — | — | — |')
   return { rows, count: state.surface.nodes.filter(n => n.kind === 'technology').length }
 }
 
@@ -417,7 +422,7 @@ function buildSummary(state: PentestState): string {
   lines.push('')
 
   lines.push('## 4. 技术指纹', '')
-  lines.push('| 技术 | 版本 | 受影响 CVE（cve-001 命中） |', '| --- | --- | --- |')
+  lines.push('| 技术 | 版本 | 命中证据 | 受影响 CVE（cve-001 命中） |', '| --- | --- | --- | --- |')
   for (const row of fingerprints.rows) lines.push(row)
   const knowTasks = state.tasks.filter(t => t.id.startsWith('knowledge-'))
   const pocTasks = state.tasks.filter(t => t.id.startsWith('poc-') && t.id !== 'poc-001')
@@ -462,6 +467,15 @@ export function generateReconSummary(
   const out =
     output ?? resolve(workspace, 'reports', 'recon-summary.md')
   mkdirSync(resolve(workspace, 'reports'), { recursive: true })
+
+  // Fingerprint the full imported traffic once at recon closure (decoupled from
+  // JS analysis): scans ALL responses (headers/html/cookies/body + JS globals),
+  // so HTML-only fingerprints are covered, and runs exactly once per recon.
+  try {
+    analyzeFingerprints(workspace, 'pentest-recon')
+  } catch {
+    /* fingerprint ruleset missing — summary still builds */
+  }
 
   const state = loadState(workspace)
   const { counts: dirs, wordlistHits } = directoryInventory(state)
