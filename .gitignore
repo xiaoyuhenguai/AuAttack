@@ -16,6 +16,10 @@ reports/
 data/
 packages/pentest-skill/references/vulnify/
 
+# 超过 GitHub 100MB 单文件限制的运行时二进制，需自行从 frida releases 下载
+# （版本/架构见 tools/README.md Mobile 一节）
+tools/frida/frida-server-x86_64
+
 # 无关/临时/演示
 XuanMu-RedTeam-Agent-main/
 XuanMu-RedTeam-Agent-main.zip

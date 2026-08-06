@@ -30,3 +30,53 @@ Before creating an active test hypothesis, deterministically read the role's ref
 A ready-to-import collection distilled from the aimy-skill hack-skills library (BOLA, JWT, CORS, 401/403 bypass, open redirect, prototype pollution, GraphQL, Host-header poisoning, request smuggling, SCM metadata leak) lives in `packages/pentest-skill/references/knowledge-records/` with an index in `README.md`. Import only the records whose signals match the observed attack surface; after `knowledge match`, run `knowledge prepare <workspace> --role <role>` for each affected role so the generated `knowledge-<id>` tasks are claimable.
 
 `pentest_auto` is passive local automation. It must not be represented as a complete vulnerability scan. `replaySafe` only replays imported in-scope GET/HEAD traffic; it does not mutate payloads, execute POCs, or create findings.
+
+## Mobile (App) assessment flow
+
+A mobile run is a **separate flow** from the web flow. The agent must know it is
+on a mobile assessment and must NOT mix in web-platform steps. The platform is
+persisted on the run (`run.platform === 'mobile'`, workspace ends in `-mobile`)
+and is surfaced in the workflow response, the agent context projection, and
+every role prompt.
+
+1. **Create a mobile workspace** (the target is the app's API base URL):
+   ```
+   pentest init <api-base-url> --platform mobile --apk <path-to.apk>
+   # or pull from the connected emulator:
+   pentest init <api-base-url> --platform mobile --package-name <pkg>
+   ```
+2. **apk-static-001** (`surface-agent`): run `pentest apk analyze <workspace> <apk>`
+   (or `pentest apk pull <workspace> <package>`). It extracts the manifest,
+   exported components, deep links, hardcoded secrets, WebView/JS bridges, API
+   endpoints, and certificate; registers `app`/`component`/`deeplink`/`webview`/
+   `route` surface nodes; persists `integrations.apkAnalysis`.
+3. **apk-dynamic-001** (`surface-agent`): connect the emulator
+   (`tools/mobile/setup-emulator.sh` deploys frida-server), confirm
+   root/certificate handling, and capture the app's HTTP(S) traffic through
+   Burp or import an authorized HAR/Burp capture as the replayable baseline.
+   When Burp MCP is reachable, pull the captured app traffic directly with
+   `pentest apk sync-mcp <workspace>` — a mobile variant of `burp sync-mcp`
+   that skips the blocked-path guard (app traffic legitimately hits /logout,
+   /payment etc.; importing it is a read-only record, not an active request).
+   **Multi-domain apps**: an app may talk to several hosts (main API + SSO +
+   CDN + third-party SDKs). `apk analyze` auto-extends scope with every host
+   it finds in the decompiled endpoints (add with `--both-schemes` to cover
+   http+https), and `apk sync-mcp` pulls proxy_history/sitemap for **every**
+   in-scope origin, so the app's full traffic across domains is imported.
+   Add any additional hosts manually with
+   `pentest scope add <ws> <url> --both-schemes` before syncing.
+4. **recon-002**: `bun run tools/recon-summary.ts <workspace>` — same as web,
+   gated before domain testing.
+5. **Domain stages**: test the app's backend endpoints (extracted routes +
+   captured traffic) with the standard web/API methodology and evidence
+   discipline. Static APK findings must be confirmed dynamically
+   (adb/frida) before submission — see
+   `methodology/mobile-dynamic-validation.md`.
+6. **verification → correlation → report**: same as web.
+
+Web-platform tools (`pentest browser discover`, `pentest_burp_crawl`,
+`pentest_javascript`, `pentest_auto`) do NOT apply to a mobile run. Mobile
+knowledge (`knowledge/14-mobile-android.md`, mobile knowledge records) is
+included automatically by `knowledge read/prepare` on mobile workspaces.
+Coverage: `pentest coverage` (routes/params/deeplinks) plus
+`pentest apk coverage <workspace>` (client-side items).
