@@ -13,8 +13,11 @@ reports/
 *.sqlite-shm
 
 # 漏洞数据库（巨大，不随仓库分发，见 README「漏洞数据库」节）
-data/
+data/vulnify/
 packages/pentest-skill/references/vulnify/
+
+# Nginx 官方源码树（Rift 复现环境，43 万行第三方源码，需自行下载 Nginx 源码）
+data/Nginx-Rift-main/env/nginx-src/
 
 # 超过 GitHub 100MB 单文件限制的运行时二进制，需自行从 frida releases 下载
 # （版本/架构见 tools/README.md Mobile 一节）
