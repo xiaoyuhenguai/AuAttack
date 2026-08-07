@@ -45,13 +45,16 @@
 
 ### 数据流(一次评估)
 
-1. 导入流量(HAR/raw/Burp/browser)→ surface 建图(route/parameter/technology/port 节点)→ **fingerprint analyze**(Wappalyzer+FingerprintHub 双源指纹,补技术节点)
+1. 导入流量(HAR/raw/Burp/browser)→ surface 建图(route/parameter/technology/port 节点,含 **cookie/安全 header/路径段** 参数节点)→ **fingerprint analyze**(Wappalyzer+FingerprintHub 双源指纹,补技术节点)
 2. `cve-001` 分析技术节点 → Vulnify 命中受影响的 CVE
 3. `recon-002` 闭合信息收集:生成 `reports/recon-summary.md`(目录/API/敏感/指纹/测试方向),**domain 测试被 gate 住,recon 不闭合不能测**
-4. 5 个 domain agent 并行测(injection/auth/file/business/poc,上限 `--max-agents`,默认 3,受 scope.maxAgentConcurrency 约束):黑板记假设与证伪,coverage 记 tested/blocked,**test-ledger 逐参数记"测了什么类、什么技术、什么结果"**
-5. `verification` 独立重放确认(candidate→reproduced→confirmed)
-6. `correlation` 推导攻击链 → **落库为 attack-path**(可画图)
-7. 报告 `pentest-report.*`,被 coverage gate 卡(untested=0 才放行)
+4. `plan-001`(**planner-agent**)生成**结构化 attack plan**:每个 route/parameter(含 cookie/header/path 攻击点)映射到适用漏洞类 + 深度清单;`pentest plan generate/list/update`;**domain 测试被 plan-001 gate 住**。**未授权/越权系统化**:每个 route 都有 auth-agent 的 `auth`(匿名访问检查),id 类参数(`id/userId/orderId/uid`)拆成 auth-agent `[auth, idor]` + injection-agent `[sqli, xss]` **两个 item**(一个节点按角色多 item,共享 test-ledger)
+5. 5 个 domain agent 并行测(injection/auth/file/business/poc,上限 `--max-agents`,默认 3,受 scope.maxAgentConcurrency 约束):黑板记假设与证伪,coverage 记 tested/blocked,**test-ledger 逐参数记"测了什么类、什么技术、什么结果"**;domain objective 引用 attack plan(按计划逐点执行)
+6. `completeness-001`(**completeness-agent**)+ **completeness gate**(domain 之后 verification 之前,确定性拦截):`pentest completeness status` 报告缺口——plan 里 required 类没有 terminal 测试结果的项 + 浅注入声明;`completeness generate-tasks` 生成 `coverage-*` 重测任务回 domain 循环,直到闭合;plan-001 被 skip 则整体退出
+7. `verification` 独立重放确认(candidate→reproduced→confirmed)
+8. `correlation` 推导攻击链 → **落库为 attack-path**(可画图)
+9. 报告 `pentest-report.*`,被 coverage gate 卡(untested=0 **且注入深度缺口=0** 才放行;`coverage matrix` 看 node×class 逐类账本)
+10. **注入深度门禁**:injection-agent 完成时 `finishTask` 机械校验 test-ledger——每个声称测过的 node×class 必须覆盖核心技术清单(sqli: quote/boolean/waf-bypass/error/time 等),缺的要么实测要么 `--result inapplicable --note <reason>`(必填),否则拒绝完成
 
 ### 目录
 
@@ -110,13 +113,15 @@ bun run run-pentest.ts attack-path sync <workspace># 落攻击链
 | `traffic import-raw / import-har / import-burp` | 导入流量 |
 | `surface add/list/link` | 维护攻击面图 |
 | `http request <ws> <url>` | 发一个受 scope 约束的请求并留证据 |
-| `coverage <ws> [mark\|waive\|mark-blocked\|list]` | 覆盖账本 |
+| `coverage <ws> [mark\|waive\|mark-blocked\|list\|matrix]` | 覆盖账本;`matrix` 输出 node×class 测试矩阵+深度缺口 |
+| `plan <ws> [generate\|list\|update\|status\|close]` | 结构化 attack plan:每个攻击点映射到适用漏洞类+深度清单 |
+| `completeness <ws> [status\|generate-tasks]` | 完整性判定:required 类未测/浅注入缺口;generate-tasks 生成 coverage-* 重测任务 |
 | `knowledge prepare/read/note/list-notes` | 知识准备/渐进读取/写笔记 |
 | `blackboard <ws> [list\|graph\|add\|update]` | 共享推理黑板 |
 | `evidence read <ws> --evidence <id> --file <f>` | 证据输出分页读 |
 | `attack-path <ws> [sync\|list\|graph\|status]` | 攻击路径 |
 | `test-ledger <ws> [list\|summary\|record]` | 逐参数测试账本(哪个 URL+参数 测了什么类、结果如何) |
-| `js analyze <ws>` / `js chase <ws> [--max-files] [--max-depth]` | JS 静态分析;chase=追 JS 引用的其他 JS(域内、去重、有界)并分析 |
+| `js analyze <ws>` / `js chase <ws> [--max-files] [--max-depth]` | JS 静态分析:提取路由/参数/URL/敏感文件/子域 + **JS 代码安全层**(硬编码密钥/DOM XSS sink/postMessage/前端权限/token 存储,成为 `file-surface` jsSignal 节点);chase=追 JS 引用的其他 JS(域内、去重、有界)并分析 |
 | `fingerprint analyze <ws>` / `update [--source]` / `status` | 双源指纹匹配:Wappalyzer 7551 + FingerprintHub 3149(CN 覆盖);update=从 GitHub API 拉最新规则集 |
 | `cve init / search / analyze` | CVE 分析(vulnify) |
 | `correlation <ws>` | 攻击链扫描 + 落库 |

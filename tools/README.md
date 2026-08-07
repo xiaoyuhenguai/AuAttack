@@ -100,6 +100,18 @@ grep -rn -E "api[_-]?key|secret|password|client[_-]?secret|aws_|firebase|Bearer 
 Stripe/Twilio/私钥/URL 密码等）并入 secret 扫描，直接扫 jadx 反编译的源码，
 无需单独跑 apkleaks python（避免二次反编译与 Windows 路径空格问题）。
 
+**加壳 App**：`apk analyze` 自动检测壳（360/腾讯/梆梆/爱加密 等特征），标记
+`packed=true`。加固 App 需先脱壳：
+```bash
+pentest apk unpack <ws> <package>   # frida-dexdump 从内存 dump 真实 dex
+# 然后对 unpacked 目录重新 analyze + audit
+pentest apk analyze <ws> <unpacked-dex-dir>
+pentest apk audit <ws> <反编译源码目录>   # 代码审计（SQL拼接/exec/反序列化/弱加密等）
+```
+> 脱壳前置：frida-server 已部署（setup-emulator.sh）+ `pip install frida-dexdump`。
+> dump 的 dex checksum 常失效，jadx 需 `-Pdex-input.verify-checksum=no`（已内置）。
+> 完整脱壳方法论见 `knowledge/16-apk-unpacking.md`。
+
 **导入 App 流量（Burp MCP）**：模拟器代理 + Burp 抓到的 App 流量用
 `pentest apk sync-mcp <workspace>` 拉入 workspace（复用 Burp MCP 的
 proxy_history/sitemap 同步管线，但**跳过 blocked-path 守卫**——App 真实流量
