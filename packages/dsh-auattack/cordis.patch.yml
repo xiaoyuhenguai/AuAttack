@@ -1,0 +1,33 @@
+# dsh-auattack bundle patch: 两行。
+#
+# 1) `auattack-mcp`：官方 @deepseek-ai/dsh-mcp-client 桥接，把 AuAttack 的
+#    MCP stdio server spawn 成子进程，其 20 个工具注册到 ctx.tools 的
+#    `mcp__auattack__*` 命名空间，任意预设的 agent 都可驱动渗透工作流。
+#    工具调用超时 10 分钟(browser discover / dirsearch / nmap 等长任务需要);
+#    如需更长, 在 profile 的 cordis.patch.yml 里覆盖本行 config。
+#
+# 2) `dsh-auattack`：插件包自身的 loader 行。必须存在——client-modules 只
+#    扫描 loader 配置树里的行来发现 `dsh.client` 声明并 serve
+#    /plugins/dsh-auattack/client.js（鲸鱼娘可视化），同时 host 端
+#    lib/index.js 的 apply 才会执行（同步 presets 到 ~/.dsh/.agent-presets、
+#    注册 systemPrompt 宣布段）。
+- insert:
+    - id: auattack-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: auattack
+        command: 'C:/Users/17098/AppData/Local/Microsoft/WinGet/Packages/Oven-sh.Bun_Microsoft.Winget.Source_8wekyb3d8bbwe/.//bun-windows-x64/bun.exe'
+        args:
+          - run
+          - 'D:/tools/Packet capture/Burp Suite/ai/AuAttack/packages/pentest-mcp/src/server.ts'
+        env:
+          PENTEST_BURP_MCP_URL: 'http://127.0.0.1:9876/'
+          PENTEST_BURP_PROXY_URL: 'http://127.0.0.1:8080'
+        cwd: 'D:/tools/Packet capture/Burp Suite/ai/AuAttack'
+        toolCallTimeoutMs: 600000
+        failOnStartupError: false
+
+    - id: dsh-auattack
+      name: 'dsh-auattack'
+

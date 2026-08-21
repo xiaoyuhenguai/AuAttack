@@ -1,0 +1,63 @@
+{
+  "name": "dsh-auattack",
+  "version": "0.1.0",
+  "description": "AuAttack pentest 引擎的 DeepSeek Harness (DSH) 插件：把 AuAttack 的 MCP stdio server（20 个 pentest_* 工具）注册为 DSH agent 的原生工具（mcp__auattack__*），提供「AuAttack 模式」agent 预设，并在 Web GUI 显示鲸鱼娘动态攻击可视化。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "presets",
+    "cordis.patch.yml",
+    "tsdown.config.ts",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "build:client": "tsdown"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-client-connection": "^0.1.0-rc.8",
+    "@types/react": "~18.3.1",
+    "@types/react-dom": "^18.3.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tsdown": "0.22.2",
+    "typescript": "~5.7.2"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "cordis",
+    "pentest",
+    "security",
+    "auattack"
+  ],
+  "license": "MIT"
+}
+
+
+
+
+

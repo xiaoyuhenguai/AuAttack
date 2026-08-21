@@ -1,0 +1,3 @@
+name: AuAttack 模式
+description: 渗透测试专家模式（全程中文输出）：内置 AuAttack MCP 引擎（mcp__auattack__*，20 个 pentest_* 工具），按证据驱动工作流完成授权目标的 Web / API / 移动端评估，产出补天（Butian）格式漏洞报告。默认预设选它后即可开始评估。
+order: 3

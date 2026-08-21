@@ -31,6 +31,25 @@ demo/
 generate/
 mark-blocked/
 
+# 护网实战数据：目标/凭据/计划/覆盖率/证据（一律不上传）
+docs/
+hermes_pwn.py
+plan-auth.json
+vcheck.jsonl
+vcheck_summary.csv
+coverage-current.json
+js-analyze.json
+dsh-home-migrate.ps1
+tools/dirsearch/test_out.json
+Cfind/
+TscanPlus_Win_Amd64/
+122.115.36.19/
+[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
 # 本地环境配置（含绝对路径，按需自行配置）
 .mcp.json
 .claude/settings.local.json
